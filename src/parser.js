@@ -40,7 +40,7 @@ export function loadPrefixesFromEnv() {
  *          - content: remaining message content (trimmed). If empty, returns full first line as content.
  *          - rawLine: the raw first non-empty line from the commit message
  */
-export default function detectPrefix(commitMessage, prefixes = null) {
+export function detectPrefix(commitMessage, prefixes = null) {
   if (!commitMessage || typeof commitMessage !== 'string') return null;
 
   if (!prefixes) prefixes = loadPrefixesFromEnv();
