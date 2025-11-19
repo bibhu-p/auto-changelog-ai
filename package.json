@@ -36,6 +36,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@google/genai": "^1.30.0",
     "dotenv": "^16.0.0",
     "openai": "^4.0.0"
   }
