@@ -1,6 +1,8 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from "@google/genai";
+import dotenv from "dotenv";
+dotenv.config();
 // import dayjs from 'dayjs'; // optional, used only if you want nicer dates (not required)
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 /**
  * Create a Google Gen AI client.
@@ -9,7 +11,7 @@ const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
  *  - Otherwise the SDK will use Application Default Credentials (ADC) if available.
  */
 function makeClient() {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (apiKey) {
     return new GoogleGenAI({ apiKey });
   } else {
@@ -27,7 +29,7 @@ const aiClient = makeClient();
  * @returns {Promise<{title:string, description:string, explanation:string}>}
  */
 export async function generateAIChangelog(commitMessage, diff) {
-  if (!commitMessage) commitMessage = '';
+  if (!commitMessage) commitMessage = "";
   try {
     const prompt = buildPrompt(commitMessage, diff);
 
@@ -38,23 +40,24 @@ export async function generateAIChangelog(commitMessage, diff) {
         {
           parts: [
             {
-              text: prompt
-            }
-          ]
-        }
+              text: prompt,
+            },
+          ],
+        },
       ],
-      // optional config example; you can tune thinking budget etc
-      // config: { thinkingConfig: { thinkingBudget: 0 } }
     });
 
     // The response object shape varies; docs show `response.text` convenience, but SDK returns structured info.
     // Try to read a common top-level text accessor; fallback to deeper extraction.
-    let raw = '';
-    if (typeof response?.text === 'string') {
+    let raw = "";
+    if (typeof response?.text === "string") {
       raw = response.text;
-    } else if (response?.candidates && response.candidates[0]?.content?.parts?.[0]?.text) {
+    } else if (
+      response?.candidates &&
+      response.candidates[0]?.content?.parts?.[0]?.text
+    ) {
       raw = response.candidates[0].content.parts[0].text;
-    } else if (typeof response === 'string') {
+    } else if (typeof response === "string") {
       raw = response;
     } else {
       // Try JSON stringify for debugging
@@ -64,8 +67,8 @@ export async function generateAIChangelog(commitMessage, diff) {
     raw = String(raw).trim();
 
     // Extract JSON substring if model returned extra text around JSON
-    const firstBrace = raw.indexOf('{');
-    const lastBrace = raw.lastIndexOf('}');
+    const firstBrace = raw.indexOf("{");
+    const lastBrace = raw.lastIndexOf("}");
     let jsonText = raw;
     if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
       jsonText = raw.slice(firstBrace, lastBrace + 1);
@@ -73,29 +76,32 @@ export async function generateAIChangelog(commitMessage, diff) {
 
     try {
       const parsed = JSON.parse(jsonText);
-      const title = String(parsed.title || '').trim();
-      const description = String(parsed.description || '').trim();
-      const explanation = String(parsed.explanation || '').trim();
+      const title = String(parsed.title || "").trim();
+      const description = String(parsed.description || "").trim();
+      const explanation = String(parsed.explanation || "").trim();
 
       return {
         title: title || fallbackTitle(commitMessage),
         description: description || fallbackDescription(commitMessage),
-        explanation: explanation || fallbackExplanation(commitMessage, diff)
+        explanation: explanation || fallbackExplanation(commitMessage, diff),
       };
     } catch (parseErr) {
-      console.warn('Warning: Gemini output not valid JSON — using fallback. Raw output:\n', raw);
+      console.warn(
+        "Warning: Gemini output not valid JSON — using fallback. Raw output:\n",
+        raw
+      );
       return {
         title: fallbackTitle(commitMessage),
         description: fallbackDescription(commitMessage),
-        explanation: fallbackExplanation(commitMessage, diff)
+        explanation: fallbackExplanation(commitMessage, diff),
       };
     }
   } catch (err) {
-    console.error('Gemini call failed:', err?.message ?? err);
+    console.error("Gemini call failed:", err?.message ?? err);
     return {
       title: fallbackTitle(commitMessage),
       description: fallbackDescription(commitMessage),
-      explanation: fallbackExplanation(commitMessage, diff)
+      explanation: fallbackExplanation(commitMessage, diff),
     };
   }
 }
@@ -103,32 +109,35 @@ export async function generateAIChangelog(commitMessage, diff) {
 function buildPrompt(commitMessage, diff) {
   // Keep a clear deterministic prompt asking for JSON only
   return [
-    'You are an automatic changelog generator for software commits.',
-    'Inputs:',
+    "You are an automatic changelog generator for software commits.",
+    "Inputs:",
     `- Commit message:\n${commitMessage}`,
-    `- Diff:\n${diff || '<EMPTY_DIFF>'}`,
-    '',
-    'Task:',
-    'Return EXACTLY a single JSON object and nothing else with the keys: title, description, explanation.',
-    '- title: short (<=80 chars).',
-    '- description: one paragraph summary (<=200 chars).',
-    '- explanation: a technical explanation (<=600 chars).',
-    '',
+    `- Diff:\n${diff || "<EMPTY_DIFF>"}`,
+    "",
+    "Task:",
+    "Return EXACTLY a single JSON object and nothing else with the keys: title, description, explanation.",
+    "- title: short (<=80 chars).",
+    "- description: one paragraph summary (<=200 chars).",
+    "- explanation: a technical explanation (<=600 chars).",
+    "",
     "If the diff is '<EMPTY_DIFF>' produce a summary that explains there were no code changes (docs/metadata-only).",
-    'Output must be valid JSON only. No markdown, no commentary, no surrounding text.',
-    ''
-  ].join('\n');
+    "Output must be valid JSON only. No markdown, no commentary, no surrounding text.",
+    "",
+  ].join("\n");
 }
 
 function fallbackTitle(commitMessage) {
-  const firstLine = (commitMessage || '').split('\n')[0] || 'Update';
+  const firstLine = (commitMessage || "").split("\n")[0] || "Update";
   return firstLine.slice(0, 80);
 }
 function fallbackDescription(commitMessage) {
-  const firstLine = (commitMessage || '').split('\n')[0] || 'No description available.';
+  const firstLine =
+    (commitMessage || "").split("\n")[0] || "No description available.";
   return firstLine.slice(0, 200);
 }
 function fallbackExplanation(commitMessage, diff) {
   const d = diff ? `Diff included (trimmed).` : `No diff provided.`;
-  return `Generated from commit message: "${(commitMessage||'').split('\n')[0]}". ${d}`.slice(0, 600);
+  return `Generated from commit message: "${
+    (commitMessage || "").split("\n")[0]
+  }". ${d}`.slice(0, 600);
 }
