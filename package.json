@@ -1,0 +1,42 @@
+{
+  "name": "auto-changelog-ai",
+  "version": "0.1.0",
+  "description": "AI-powered changelog generator that runs on commit prefixes and CI",
+  "type": "module",
+  "main": "src/run.js",
+  "exports": {
+    ".": "./src/run.js",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "auto-changelog-ai": "./src/cli.js"
+  },
+  "files": [
+    "src/",
+    "CHANGELOG.md",
+    "README.md",
+    ".env.example"
+  ],
+  "scripts": {
+    "start": "node ./src/run.js",
+    "install-hook": "node ./src/setupHook.js",
+    "postinstall": "node ./src/setupHook.js",
+    "lint": "echo \"No lint configured. Add your own.\""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "changelog",
+    "ai",
+    "openai",
+    "git",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "openai": "^4.0.0"
+  }
+}
